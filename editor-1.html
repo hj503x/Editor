@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio — Design Editor</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #f5f5f5;
+  --white: #ffffff;
+  --purple: #7c3aed;
+  --purple-light: #ede9fe;
+  --purple-mid: #6d28d9;
+  --text: #111827;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --sidebar-w: 300px;
+  --topbar-h: 56px;
+  --toolbar-h: 44px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
+  --radius: 8px;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+  font-size: 13px;
+}
+
+/* ── TOP BAR ─────────────────────────────────────────────── */
+#topbar {
+  height: var(--topbar-h);
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 6px;
+  z-index: 200;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.logo {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--purple);
+  letter-spacing: -0.5px;
+  margin-right: 8px;
+  white-space: nowrap;
+}
+
+.tb-sep { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
+
+.tb-btn {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+.tb-btn:hover { background: var(--bg); }
+.tb-btn.active { background: var(--purple-light); color: var(--purple); }
+.tb-btn .ico { font-size: 14px; }
+
+.tb-btn-primary {
+  height: 32px;
+  padding: 0 16px;
+  background: var(--purple);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  transition: background 0.12s;
+}
+.tb-btn-primary:hover { background: var(--purple-mid); }
+
+.canvas-size-tag {
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.canvas-size-tag:hover { border-color: var(--purple); color: var(--purple); }
+
+/* ── FONT TOOLBAR ─────────────────────────────────────────── */
+#font-toolbar {
+  height: var(--toolbar-h);
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  display: none;
+  align-items: center;
+  padding: 0 16px;
+  gap: 6px;
+  flex-shrink: 0;
+}
+#font-toolbar.visible { display: flex; }
+
+.ft-select {
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0 6px;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--white);
+  cursor: pointer;
+  outline: none;
+}
+.ft-select:focus { border-color: var(--purple); }
+
+.ft-num {
+  width: 52px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0 6px;
+  font-size: 12px;
+  text-align: center;
+  outline: none;
+}
+.ft-num:focus { border-color: var(--purple); }
+
+.ft-btn {
+  height: 28px;
+  width: 28px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+}
+.ft-btn:hover { background: var(--bg); }
+.ft-btn.on { background: var(--purple-light); color: var(--purple); border-color: var(--purple-light); }
+
+.ft-color {
+  width: 28px;
+  height: 28px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  padding: 2px;
+}
+
+.ft-align-group { display: flex; gap: 2px; }
+
+.ft-sep { width: 1px; height: 22px; background: var(--border); margin: 0 2px; }
+
+/* ── BODY LAYOUT ──────────────────────────────────────────── */
+#body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── LEFT PANEL ───────────────────────────────────────────── */
+#left-panel {
+  width: var(--sidebar-w);
+  background: var(--white);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Tab bar */
+#tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+#tab-bar::-webkit-scrollbar { display: none; }
+
+.tab {
+  flex: 1;
+  min-width: 60px;
+  padding: 10px 4px 9px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.12s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.tab .tab-ico { font-size: 16px; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--purple); border-bottom-color: var(--purple); }
+
+/* Tab panels */
+.tab-panel { display: none; flex: 1; overflow-y: auto; flex-direction: column; }
+.tab-panel.active { display: flex; }
+.tab-panel::-webkit-scrollbar { width: 4px; }
+.tab-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.panel-section { padding: 12px; border-bottom: 1px solid var(--border); }
+.panel-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); margin-bottom: 10px; }
+
+/* Elements grid */
+.el-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.el-item {
+  aspect-ratio: 1;
+  background: var(--bg);
+  border: 1.5px solid transparent;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.el-item:hover { border-color: var(--purple); color: var(--purple); background: var(--purple-light); }
+.el-item .ei { font-size: 22px; }
+
+/* Color palette */
+.color-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.cswatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 0.1s, border-color 0.1s;
+  flex-shrink: 0;
+}
+.cswatch:hover { transform: scale(1.12); }
+.cswatch.active { border-color: var(--purple); }
+.cswatch.white { border-color: var(--border); }
+#custom-color-input {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  border: 2px dashed var(--border);
+  cursor: pointer;
+  background: none;
+  padding: 1px;
+}
+
+/* Layers */
+.layer-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.layer-item:hover { background: var(--bg); }
+.layer-item.sel { background: var(--purple-light); color: var(--purple); font-weight: 600; }
+.layer-ico { font-size: 13px; width: 18px; text-align: center; flex-shrink: 0; }
+.layer-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+
+/* Text styles in text tab */
+.text-style-btn {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--white);
+  cursor: pointer;
+  margin-bottom: 6px;
+  transition: border-color 0.12s;
+}
+.text-style-btn:hover { border-color: var(--purple); }
+.text-style-btn .tsb-label { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+.text-style-btn .tsb-preview { color: var(--text); }
+
+/* Upload tab */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  padding: 24px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.12s;
+  margin-bottom: 12px;
+}
+.upload-zone:hover { border-color: var(--purple); background: var(--purple-light); }
+.upload-zone .uz-ico { font-size: 28px; margin-bottom: 6px; }
+.upload-zone p { font-size: 12px; color: var(--muted); }
+
+/* ── CANVAS AREA ──────────────────────────────────────────── */
+#canvas-wrap {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e8e8e8;
+  background-image: radial-gradient(circle, #d0d0d0 1px, transparent 1px);
+  background-size: 20px 20px;
+  padding: 48px;
+  position: relative;
+}
+
+#canvas-shadow {
+  box-shadow: 0 4px 32px rgba(0,0,0,0.2);
+  position: relative;
+}
+
+#main-canvas { display: block; }
+
+/* Zoom bar */
+#zoom-bar {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--white);
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.zb-btn {
+  width: 26px; height: 26px;
+  border: none; background: none;
+  border-radius: 5px;
+  cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+}
+.zb-btn:hover { background: var(--bg); }
+#zoom-pct { min-width: 42px; text-align: center; color: var(--text); }
+
+/* ── RIGHT PANEL ──────────────────────────────────────────── */
+#right-panel {
+  width: 240px;
+  background: var(--white);
+  border-left: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+#right-panel::-webkit-scrollbar { width: 4px; }
+#right-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.rp-section { padding: 14px 14px 10px; border-bottom: 1px solid var(--border); }
+.rp-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); margin-bottom: 10px; }
+
+.rp-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.rp-lbl { font-size: 11px; color: var(--muted); width: 18px; flex-shrink: 0; }
+.rp-input {
+  flex: 1;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0 7px;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+  text-align: right;
+}
+.rp-input:focus { border-color: var(--purple); background: var(--white); }
+
+.rp-color-btn {
+  width: 28px; height: 28px;
+  border-radius: 5px;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.rp-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+.rp-grid2 .rp-input { text-align: right; }
+
+.no-sel {
+  padding: 24px 14px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.no-sel .ns-ico { font-size: 28px; margin-bottom: 8px; display: block; }
+
+/* Opacity slider */
+.opacity-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.opacity-slider {
+  flex: 1;
+  accent-color: var(--purple);
+}
+.opacity-val { font-size: 11px; color: var(--muted); width: 32px; text-align: right; }
+
+/* Arrange buttons */
+.arrange-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.arrange-btn {
+  height: 28px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: background 0.1s;
+}
+.arrange-btn:hover { background: var(--purple-light); color: var(--purple); border-color: var(--purple-light); }
+
+/* Delete btn */
+.delete-btn {
+  width: 100%;
+  height: 32px;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: 6px;
+  color: #e11d48;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: background 0.1s;
+}
+.delete-btn:hover { background: #ffe4e6; }
+
+/* ── CONTEXT MENU ──────────────────────────────────────────── */
+#ctx {
+  position: fixed;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-md);
+  padding: 4px;
+  z-index: 1000;
+  display: none;
+  min-width: 160px;
+}
+.ctx-item {
+  padding: 7px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.1s;
+}
+.ctx-item:hover { background: var(--bg); }
+.ctx-item.red { color: #e11d48; }
+.ctx-item.red:hover { background: #fff1f2; }
+.ctx-div { height: 1px; background: var(--border); margin: 3px 0; }
+
+/* ── MODAL ──────────────────────────────────────────────────── */
+#overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+#overlay.open { display: flex; }
+#modal {
+  background: var(--white);
+  border-radius: 14px;
+  padding: 24px;
+  width: 340px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+}
+#modal h3 { font-size: 15px; font-weight: 700; margin-bottom: 16px; }
+.m-row { margin-bottom: 12px; }
+.m-row label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 4px; font-weight: 500; }
+.m-row input, .m-row select {
+  width: 100%;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 0 10px;
+  font-size: 13px;
+  outline: none;
+}
+.m-row input:focus, .m-row select:focus { border-color: var(--purple); }
+.m-actions { display: flex; gap: 8px; margin-top: 18px; }
+.m-actions button {
+  flex: 1; height: 36px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  font-size: 13px; font-weight: 500;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.m-actions .m-ok { background: var(--purple); color: white; border-color: var(--purple); }
+.m-actions .m-ok:hover { background: var(--purple-mid); }
+.m-actions .m-cancel:hover { background: var(--bg); }
+
+/* ── TOAST ──────────────────────────────────────────────────── */
+#toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #1f2937;
+  color: white;
+  font-size: 12px;
+  padding: 9px 16px;
+  border-radius: 8px;
+  z-index: 999;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: all 0.2s;
+  pointer-events: none;
+}
+#toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <span class="logo">✦ Studio</span>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" onclick="undo()"><span class="ico">↩</span> Undo</button>
+  <button class="tb-btn" onclick="redo()"><span class="ico">↪</span> Redo</button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" id="tool-select-btn" onclick="setTool('select')"><span class="ico">↖</span> Select</button>
+  <button class="tb-btn" onclick="newCanvas()"><span class="ico">＋</span> New</button>
+  <span class="canvas-size-tag" id="size-tag" onclick="openCanvasModal()">800 × 600</span>
+  <button class="tb-btn-primary" onclick="openExportModal()">⬇ Download</button>
+</div>
+
+<!-- FONT TOOLBAR -->
+<div id="font-toolbar">
+  <select class="ft-select" id="ft-family" style="width:130px" onchange="ftProp('fontFamily',this.value)">
+    <option>Segoe UI</option><option>Arial</option><option>Georgia</option>
+    <option>Courier New</option><option>Impact</option><option>Trebuchet MS</option>
+    <option>Verdana</option><option>Times New Roman</option>
+  </select>
+  <div class="ft-sep"></div>
+  <input class="ft-num" id="ft-size" type="number" value="24" min="6" max="300" onchange="ftProp('fontSize',+this.value)">
+  <div class="ft-sep"></div>
+  <button class="ft-btn" id="ft-bold" onclick="toggleFtProp('fontWeight','bold','normal')" title="Bold"><b>B</b></button>
+  <button class="ft-btn" id="ft-italic" onclick="toggleFtProp('fontStyle','italic','')" title="Italic"><i>I</i></button>
+  <button class="ft-btn" id="ft-under" onclick="toggleFtProp('underline',true,false)" title="Underline"><u>U</u></button>
+  <div class="ft-sep"></div>
+  <div class="ft-align-group">
+    <button class="ft-btn" id="ft-left" onclick="ftProp('align','left')" title="Align Left">⬛︎</button>
+    <button class="ft-btn" id="ft-center" onclick="ftProp('align','center')" title="Center">≡</button>
+    <button class="ft-btn" id="ft-right" onclick="ftProp('align','right')" title="Align Right">⬛</button>
+  </div>
+  <div class="ft-sep"></div>
+  <input type="color" class="ft-color" id="ft-color" value="#111827" onchange="ftProp('fill',this.value)" title="Text Color">
+</div>
+
+<!-- BODY -->
+<div id="body">
+
+  <!-- LEFT PANEL -->
+  <div id="left-panel">
+    <div id="tab-bar">
+      <div class="tab active" data-tab="elements" onclick="switchTab('elements')">
+        <span class="tab-ico">⬡</span>Elements
+      </div>
+      <div class="tab" data-tab="text" onclick="switchTab('text')">
+        <span class="tab-ico">T</span>Text
+      </div>
+      <div class="tab" data-tab="uploads" onclick="switchTab('uploads')">
+        <span class="tab-ico">↑</span>Uploads
+      </div>
+      <div class="tab" data-tab="colors" onclick="switchTab('colors')">
+        <span class="tab-ico">🎨</span>Colors
+      </div>
+      <div class="tab" data-tab="layers" onclick="switchTab('layers')">
+        <span class="tab-ico">⧉</span>Layers
+      </div>
+    </div>
+
+    <!-- ELEMENTS TAB -->
+    <div class="tab-panel active" id="tab-elements">
+      <div class="panel-section">
+        <div class="panel-label">Shapes</div>
+        <div class="el-grid">
+          <div class="el-item" onclick="addShape('rect')"><span class="ei">▭</span>Rect</div>
+          <div class="el-item" onclick="addShape('circle')"><span class="ei">○</span>Circle</div>
+          <div class="el-item" onclick="addShape('triangle')"><span class="ei">△</span>Triangle</div>
+          <div class="el-item" onclick="addShape('star')"><span class="ei">★</span>Star</div>
+          <div class="el-item" onclick="addShape('heart')"><span class="ei">♥</span>Heart</div>
+          <div class="el-item" onclick="addShape('diamond')"><span class="ei">◆</span>Diamond</div>
+          <div class="el-item" onclick="addShape('arrow')"><span class="ei">→</span>Arrow</div>
+          <div class="el-item" onclick="addShape('line')"><span class="ei">╱</span>Line</div>
+          <div class="el-item" onclick="setTool('draw')"><span class="ei">✏</span>Draw</div>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="panel-label">Background Color</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="color" class="rp-color-btn" id="bg-color" value="#ffffff" onchange="changeBg(this.value)" style="width:36px;height:36px">
+          <span style="font-size:11px;color:var(--muted)">Canvas background</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TEXT TAB -->
+    <div class="tab-panel" id="tab-text">
+      <div class="panel-section">
+        <div class="panel-label">Add Text</div>
+        <div class="text-style-btn" onclick="addTextPreset(36,'bold')">
+          <div class="tsb-label">Heading</div>
+          <div class="tsb-preview" style="font-size:20px;font-weight:700">Add a heading</div>
+        </div>
+        <div class="text-style-btn" onclick="addTextPreset(20,'600')">
+          <div class="tsb-label">Subheading</div>
+          <div class="tsb-preview" style="font-size:15px;font-weight:600">Add a subheading</div>
+        </div>
+        <div class="text-style-btn" onclick="addTextPreset(14,'normal')">
+          <div class="tsb-label">Body text</div>
+          <div class="tsb-preview" style="font-size:13px">Add a little bit of body text</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- UPLOADS TAB -->
+    <div class="tab-panel" id="tab-uploads">
+      <div class="panel-section">
+        <div class="upload-zone" onclick="document.getElementById('img-input').click()">
+          <div class="uz-ico">🖼</div>
+          <p><strong>Click to upload</strong></p>
+          <p>PNG, JPG, WEBP, SVG</p>
+        </div>
+        <div id="uploaded-list"></div>
+      </div>
+    </div>
+
+    <!-- COLORS TAB -->
+    <div class="tab-panel" id="tab-colors">
+      <div class="panel-section">
+        <div class="panel-label">Current Color</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div id="active-color-preview" style="width:40px;height:40px;border-radius:8px;border:1.5px solid var(--border);background:#7c3aed"></div>
+          <span id="active-color-hex" style="font-size:13px;font-weight:600;color:var(--text)">#7c3aed</span>
+        </div>
+        <input type="color" id="custom-color-input" value="#7c3aed" onchange="pickColor(this.value)" style="width:100%;height:36px;border-radius:8px;border:1px solid var(--border);cursor:pointer;padding:2px">
+      </div>
+      <div class="panel-section">
+        <div class="panel-label">Palette</div>
+        <div class="color-row">
+          <div class="cswatch active" style="background:#7c3aed" data-c="#7c3aed" onclick="pickColor('#7c3aed',this)"></div>
+          <div class="cswatch" style="background:#e11d48" data-c="#e11d48" onclick="pickColor('#e11d48',this)"></div>
+          <div class="cswatch" style="background:#f97316" data-c="#f97316" onclick="pickColor('#f97316',this)"></div>
+          <div class="cswatch" style="background:#eab308" data-c="#eab308" onclick="pickColor('#eab308',this)"></div>
+          <div class="cswatch" style="background:#22c55e" data-c="#22c55e" onclick="pickColor('#22c55e',this)"></div>
+          <div class="cswatch" style="background:#06b6d4" data-c="#06b6d4" onclick="pickColor('#06b6d4',this)"></div>
+          <div class="cswatch" style="background:#3b82f6" data-c="#3b82f6" onclick="pickColor('#3b82f6',this)"></div>
+          <div class="cswatch" style="background:#8b5cf6" data-c="#8b5cf6" onclick="pickColor('#8b5cf6',this)"></div>
+          <div class="cswatch" style="background:#ec4899" data-c="#ec4899" onclick="pickColor('#ec4899',this)"></div>
+          <div class="cswatch" style="background:#14b8a6" data-c="#14b8a6" onclick="pickColor('#14b8a6',this)"></div>
+          <div class="cswatch" style="background:#1f2937" data-c="#1f2937" onclick="pickColor('#1f2937',this)"></div>
+          <div class="cswatch white" style="background:#ffffff" data-c="#ffffff" onclick="pickColor('#ffffff',this)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LAYERS TAB -->
+    <div class="tab-panel" id="tab-layers">
+      <div class="panel-section">
+        <div class="panel-label">Layers</div>
+        <div id="layers-list"><div class="no-sel">No elements yet</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CANVAS AREA -->
+  <div id="canvas-wrap">
+    <div id="canvas-shadow">
+      <canvas id="main-canvas"></canvas>
+    </div>
+    <div id="zoom-bar">
+      <button class="zb-btn" onclick="zoomOut()">−</button>
+      <span id="zoom-pct">100%</span>
+      <button class="zb-btn" onclick="zoomIn()">+</button>
+      <button class="zb-btn" onclick="zoomFit()" style="font-size:11px;width:auto;padding:0 6px">Fit</button>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="right-panel">
+    <div class="rp-section">
+      <div class="rp-label">Position & Size</div>
+      <div id="rp-content"><div class="no-sel"><span class="ns-ico">↖</span>Select an element to edit</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- CONTEXT MENU -->
+<div id="ctx">
+  <div class="ctx-item" onclick="ctxDuplicate()">⧉ Duplicate</div>
+  <div class="ctx-item" onclick="ctxFront()">⬆ Bring to Front</div>
+  <div class="ctx-item" onclick="ctxBack()">⬇ Send to Back</div>
+  <div class="ctx-div"></div>
+  <div class="ctx-item red" onclick="deleteSelected()">🗑 Delete</div>
+</div>
+
+<!-- MODAL -->
+<div id="overlay">
+  <div id="modal">
+    <h3 id="modal-title"></h3>
+    <div id="modal-body"></div>
+    <div class="m-actions">
+      <button class="m-cancel" onclick="closeModal()">Cancel</button>
+      <button class="m-ok" id="modal-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="img-input" accept="image/*" style="display:none" onchange="handleUpload(event)">
+<div id="toast"></div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────
+const canvas = document.getElementById('main-canvas');
+const ctx = canvas.getContext('2d');
+let W = 800, H = 600, zoom = 1;
+let elements = [], selected = null, tool = 'select';
+let activeColor = '#7c3aed', bgColor = '#ffffff';
+let history = [], redoStack = [], idCtr = 0;
+let isDrag = false, isResize = false, isDraw = false;
+let dragOff = {x:0,y:0}, dragStart = {x:0,y:0}, resizeH = null, drawPath = [];
+let uploadedImgs = [];
+
+// ── INIT ──────────────────────────────────────────────────────
+(function init() {
+  canvas.width = W; canvas.height = H;
+  render(); updateLayers(); updateSizeTag();
+  applyZoom();
+})();
+
+// ── RENDER ────────────────────────────────────────────────────
+function render() {
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0,0,W,H);
+  elements.forEach(el => { ctx.save(); drawEl(el); ctx.restore(); });
+  if (selected) drawSelection(selected);
+  if (isDraw && drawPath.length > 1) {
+    ctx.save();
+    ctx.strokeStyle = activeColor; ctx.lineWidth = 3;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(drawPath[0].x, drawPath[0].y);
+    drawPath.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.stroke(); ctx.restore();
+  }
+}
+
+function drawEl(el) {
+  ctx.globalAlpha = el.opacity ?? 1;
+  switch(el.type) {
+    case 'rect':     drawRect(el); break;
+    case 'circle':   drawCircle(el); break;
+    case 'triangle': drawTriangle(el); break;
+    case 'line':     drawLine(el); break;
+    case 'star':     drawStar(el); break;
+    case 'heart':    drawHeart(el); break;
+    case 'diamond':  drawDiamond(el); break;
+    case 'arrow':    drawArrow(el); break;
+    case 'text':     drawText(el); break;
+    case 'image':    drawImg(el); break;
+    case 'drawing':  drawFree(el); break;
+  }
+}
+
+function drawRect(el) {
+  ctx.fillStyle = el.fill;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(el.x,el.y,el.w,el.h,el.radius||0);
+  else ctx.rect(el.x,el.y,el.w,el.h);
+  ctx.fill();
+  if (el.stroke) { ctx.strokeStyle = el.stroke; ctx.lineWidth = el.sw||2; ctx.stroke(); }
+}
+function drawCircle(el) {
+  ctx.fillStyle = el.fill;
+  ctx.beginPath();
+  ctx.ellipse(el.x+el.w/2,el.y+el.h/2,el.w/2,el.h/2,0,0,Math.PI*2);
+  ctx.fill();
+}
+function drawTriangle(el) {
+  ctx.fillStyle = el.fill;
+  ctx.beginPath();
+  ctx.moveTo(el.x+el.w/2,el.y);
+  ctx.lineTo(el.x+el.w,el.y+el.h);
+  ctx.lineTo(el.x,el.y+el.h);
+  ctx.closePath(); ctx.fill();
+}
+function drawLine(el) {
+  ctx.strokeStyle = el.fill; ctx.lineWidth = el.sw||4;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(el.x,el.y+el.h/2); ctx.lineTo(el.x+el.w,el.y+el.h/2);
+  ctx.stroke();
+}
+function drawStar(el) {
+  ctx.fillStyle = el.fill;
+  const cx=el.x+el.w/2, cy=el.y+el.h/2, or=Math.min(el.w,el.h)/2, ir=or*0.4;
+  ctx.beginPath();
+  for(let i=0;i<10;i++){
+    const r=i%2===0?or:ir, a=(i*Math.PI/5)-Math.PI/2;
+    i===0?ctx.moveTo(cx+r*Math.cos(a),cy+r*Math.sin(a)):ctx.lineTo(cx+r*Math.cos(a),cy+r*Math.sin(a));
+  }
+  ctx.closePath(); ctx.fill();
+}
+function drawHeart(el) {
+  ctx.fillStyle = el.fill;
+  const cx=el.x+el.w/2, cy=el.y+el.h/2, s=Math.min(el.w,el.h)/2;
+  ctx.beginPath();
+  ctx.moveTo(cx,cy+s*0.8);
+  ctx.bezierCurveTo(cx-s*1.2,cy+s*0.2,cx-s*1.4,cy-s*0.6,cx,cy-s*0.2);
+  ctx.bezierCurveTo(cx+s*1.4,cy-s*0.6,cx+s*1.2,cy+s*0.2,cx,cy+s*0.8);
+  ctx.fill();
+}
+function drawDiamond(el) {
+  ctx.fillStyle = el.fill;
+  const cx=el.x+el.w/2, cy=el.y+el.h/2;
+  ctx.beginPath();
+  ctx.moveTo(cx,el.y); ctx.lineTo(el.x+el.w,cy);
+  ctx.lineTo(cx,el.y+el.h); ctx.lineTo(el.x,cy);
+  ctx.closePath(); ctx.fill();
+}
+function drawArrow(el) {
+  ctx.fillStyle = el.fill;
+  const x=el.x, y=el.y+el.h/2, ex=el.x+el.w;
+  const hw=Math.min(el.h*0.5,20), hl=Math.min(el.w*0.3,30);
+  ctx.beginPath();
+  ctx.moveTo(x,y-el.h*0.12); ctx.lineTo(ex-hl,y-el.h*0.12);
+  ctx.lineTo(ex-hl,y-hw/2); ctx.lineTo(ex,y);
+  ctx.lineTo(ex-hl,y+hw/2); ctx.lineTo(ex-hl,y+el.h*0.12);
+  ctx.lineTo(x,y+el.h*0.12); ctx.closePath(); ctx.fill();
+}
+function drawText(el) {
+  const fs = el.fontSize||24;
+  const fw = el.fontWeight||'normal';
+  const fi = el.fontStyle||'';
+  ctx.font = `${fi} ${fw} ${fs}px ${el.fontFamily||'Segoe UI'}`;
+  ctx.fillStyle = el.fill;
+  ctx.textAlign = el.align||'left';
+  ctx.textBaseline = 'top';
+  const lines = el.text.split('\n');
+  const lh = fs*1.3;
+  lines.forEach((line,i) => {
+    const tx = el.align==='center'?el.x+el.w/2:el.align==='right'?el.x+el.w:el.x;
+    ctx.fillText(line, tx, el.y+i*lh);
+    if (el.underline) {
+      const mw = ctx.measureText(line).width;
+      const ux = el.align==='center'?tx-mw/2:el.align==='right'?tx-mw:tx;
+      ctx.fillRect(ux, el.y+i*lh+fs+2, mw, 1.5);
+    }
+  });
+  // update bounds
+  ctx.textAlign='left';
+  const maxW = Math.max(...lines.map(l=>ctx.measureText(l).width));
+  el.w = Math.max(maxW+4,40); el.h = lines.length*lh+4;
+}
+function drawImg(el) {
+  if(el.img) ctx.drawImage(el.img,el.x,el.y,el.w,el.h);
+}
+function drawFree(el) {
+  if(!el.pts||el.pts.length<2) return;
+  ctx.strokeStyle=el.fill; ctx.lineWidth=el.lw||3;
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.beginPath(); ctx.moveTo(el.pts[0].x,el.pts[0].y);
+  el.pts.forEach(p=>ctx.lineTo(p.x,p.y)); ctx.stroke();
+}
+
+// ── SELECTION BOX ─────────────────────────────────────────────
+function drawSelection(el) {
+  const p=5;
+  ctx.save();
+  ctx.strokeStyle='#7c3aed'; ctx.lineWidth=1.5;
+  ctx.setLineDash([5,4]);
+  ctx.strokeRect(el.x-p,el.y-p,el.w+p*2,el.h+p*2);
+  ctx.setLineDash([]);
+  getHandles(el).forEach(h=>{
+    ctx.fillStyle='#fff'; ctx.strokeStyle='#7c3aed'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(h.x,h.y,5,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  });
+  ctx.restore();
+}
+function getHandles(el) {
+  const p=5;
+  return [
+    {x:el.x-p,y:el.y-p,d:'nw'},{x:el.x+el.w/2,y:el.y-p,d:'n'},{x:el.x+el.w+p,y:el.y-p,d:'ne'},
+    {x:el.x+el.w+p,y:el.y+el.h/2,d:'e'},{x:el.x+el.w+p,y:el.y+el.h+p,d:'se'},
+    {x:el.x+el.w/2,y:el.y+el.h+p,d:'s'},{x:el.x-p,y:el.y+el.h+p,d:'sw'},{x:el.x-p,y:el.y+el.h/2,d:'w'}
+  ];
+}
+
+// ── MOUSE ─────────────────────────────────────────────────────
+canvas.addEventListener('mousedown', e => {
+  hideCtx();
+  const pos = cpos(e);
+  if (tool==='draw') { isDraw=true; drawPath=[pos]; saveHist(); return; }
+  if (tool==='text') { placeText(pos); setTool('select'); return; }
+  if (selected) {
+    const h = handleAt(pos, selected);
+    if (h) { isResize=true; resizeH=h; dragStart=pos; return; }
+  }
+  const hit = hitTest(pos);
+  if (hit) {
+    selected=hit; isDrag=true; dragStart=pos;
+    dragOff={x:pos.x-hit.x, y:pos.y-hit.y};
+    saveHist();
+  } else { selected=null; }
+  updateProps(); updateLayers(); render();
+});
+
+canvas.addEventListener('mousemove', e => {
+  const pos = cpos(e);
+  if (isDraw) { drawPath.push(pos); render(); return; }
+  if (isResize && selected) { doResize(selected,resizeH,pos); updateProps(); render(); return; }
+  if (isDrag && selected) { selected.x=pos.x-dragOff.x; selected.y=pos.y-dragOff.y; updateProps(); render(); return; }
+  if (selected) {
+    const h = handleAt(pos,selected);
+    const cursors={nw:'nw-resize',n:'n-resize',ne:'ne-resize',e:'e-resize',se:'se-resize',s:'s-resize',sw:'sw-resize',w:'w-resize'};
+    canvas.style.cursor = h?cursors[h.d]:hitTest(pos)?'move':'default';
+  } else {
+    canvas.style.cursor = tool==='text'?'text':tool==='draw'?'crosshair':'default';
+  }
+});
+
+canvas.addEventListener('mouseup', e => {
+  if (isDraw && drawPath.length>1) {
+    const xs=drawPath.map(p=>p.x), ys=drawPath.map(p=>p.y);
+    const el={id:++idCtr,type:'drawing',x:Math.min(...xs),y:Math.min(...ys),
+      w:Math.max(...xs)-Math.min(...xs)||1,h:Math.max(...ys)-Math.min(...ys)||1,
+      fill:activeColor,lw:3,opacity:1,pts:drawPath,name:'Drawing '+idCtr};
+    elements.push(el); selected=el;
+  }
+  isDraw=false; isDrag=false; isResize=false; resizeH=null; drawPath=[];
+  updateLayers(); updateProps(); render();
+});
+
+canvas.addEventListener('dblclick', e => {
+  const pos=cpos(e), hit=hitTest(pos);
+  if (hit?.type==='text') {
+    const t=prompt('Edit text:',hit.text);
+    if(t!==null){saveHist();hit.text=t;render();}
+  }
+});
+
+canvas.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  const pos=cpos(e), hit=hitTest(pos);
+  if(hit){selected=hit;updateProps();updateLayers();render();
+    const m=document.getElementById('ctx');
+    m.style.display='block';m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';}
+});
+
+function cpos(e) {
+  const r=canvas.getBoundingClientRect();
+  return {x:(e.clientX-r.left)/zoom, y:(e.clientY-r.top)/zoom};
+}
+function hitTest(pos) {
+  for(let i=elements.length-1;i>=0;i--){
+    const el=elements[i], p=5;
+    if(pos.x>=el.x-p&&pos.x<=el.x+el.w+p&&pos.y>=el.y-p&&pos.y<=el.y+el.h+p) return el;
+  }
+  return null;
+}
+function handleAt(pos,el) {
+  return getHandles(el).find(h=>Math.hypot(pos.x-h.x,pos.y-h.y)<8)||null;
+}
+function doResize(el,h,pos) {
+  const dx=pos.x-dragStart.x, dy=pos.y-dragStart.y; dragStart=pos;
+  if(h.d.includes('e')) el.w=Math.max(10,el.w+dx);
+  if(h.d.includes('s')) el.h=Math.max(10,el.h+dy);
+  if(h.d.includes('w')){el.x+=dx;el.w=Math.max(10,el.w-dx);}
+  if(h.d.includes('n')){el.y+=dy;el.h=Math.max(10,el.h-dy);}
+}
+
+// ── TOOLS ─────────────────────────────────────────────────────
+function setTool(t) {
+  tool=t;
+  document.getElementById('tool-select-btn').classList.toggle('active',t==='select');
+  canvas.style.cursor=t==='text'?'text':t==='draw'?'crosshair':'default';
+}
+
+function addShape(type) {
+  saveHist();
+  const el={id:++idCtr,type,x:W/2-60+rand(),y:H/2-60+rand(),w:120,h:120,
+    fill:activeColor,opacity:1,name:cap(type)+' '+idCtr};
+  if(type==='line')el.h=4;
+  elements.push(el); selected=el;
+  setTool('select'); updateLayers(); updateProps(); render();
+  switchTab('layers');
+}
+
+function placeText(pos) {
+  saveHist();
+  const el={id:++idCtr,type:'text',x:pos.x,y:pos.y,w:200,h:32,
+    text:'Double-click to edit',fill:activeColor,fontSize:24,
+    fontFamily:'Segoe UI',fontWeight:'normal',fontStyle:'',
+    align:'left',underline:false,opacity:1,name:'Text '+idCtr};
+  elements.push(el); selected=el;
+  updateLayers(); updateProps(); render();
+}
+
+function addTextPreset(size,weight) {
+  saveHist();
+  const labels={36:'Add a heading',20:'Add a subheading',14:'Add body text'};
+  const el={id:++idCtr,type:'text',x:W/2-100,y:H/2-size/2,w:200,h:size*1.3+4,
+    text:labels[size]||'Text',fill:'#111827',fontSize:size,
+    fontFamily:'Segoe UI',fontWeight:weight,fontStyle:'',
+    align:'left',underline:false,opacity:1,name:'Text '+idCtr};
+  elements.push(el); selected=el;
+  setTool('select'); updateLayers(); updateProps(); render();
+  switchTab('layers');
+}
+
+// ── UPLOAD ────────────────────────────────────────────────────
+function handleUpload(e) {
+  const file=e.target.files[0]; if(!file) return;
+  saveHist();
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const img=new Image();
+    img.onload=()=>{
+      const ratio=img.width/img.height, w=Math.min(300,img.width);
+      const el={id:++idCtr,type:'image',x:W/2-w/2,y:H/2-(w/ratio)/2,
+        w,h:w/ratio,fill:'',opacity:1,img,name:file.name};
+      elements.push(el); selected=el;
+      uploadedImgs.push({name:file.name,img,w,h:w/ratio});
+      renderUploadList();
+      setTool('select'); updateLayers(); updateProps(); render();
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value='';
+}
+
+function renderUploadList() {
+  const list=document.getElementById('uploaded-list');
+  list.innerHTML=uploadedImgs.map((u,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:6px;border-radius:6px;cursor:pointer;font-size:12px"
+         onclick="addUploadedImg(${i})" class="el-item" style="border-radius:6px;margin-bottom:4px">
+      <span>🖼</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.name}</span>
+    </div>`).join('');
+}
+
+function addUploadedImg(i) {
+  const u=uploadedImgs[i];
+  saveHist();
+  const el={id:++idCtr,type:'image',x:W/2-u.w/2,y:H/2-u.h/2,
+    w:u.w,h:u.h,fill:'',opacity:1,img:u.img,name:u.name};
+  elements.push(el); selected=el;
+  setTool('select'); updateLayers(); updateProps(); render();
+}
+
+// ── COLOR ─────────────────────────────────────────────────────
+function pickColor(hex, swatch) {
+  activeColor=hex;
+  document.getElementById('active-color-preview').style.background=hex;
+  document.getElementById('active-color-hex').textContent=hex;
+  document.getElementById('custom-color-input').value=hex;
+  document.querySelectorAll('.cswatch').forEach(s=>s.classList.remove('active'));
+  if(swatch) swatch.classList.add('active');
+  if(selected&&selected.type!=='image'){saveHist();selected.fill=hex;render();updateProps();}
+}
+function changeBg(v){saveHist();bgColor=v;render();}
+
+// ── PROPERTIES PANEL ─────────────────────────────────────────
+function updateProps() {
+  const rp=document.getElementById('rp-content');
+  const ft=document.getElementById('font-toolbar');
+  if(!selected){
+    rp.innerHTML='<div class="no-sel"><span class="ns-ico">↖</span>Select an element to edit</div>';
+    ft.classList.remove('visible');
+    return;
+  }
+  const el=selected;
+  const isText=el.type==='text';
+  ft.classList.toggle('visible', isText);
+  if(isText) syncFontToolbar(el);
+
+  let h=`
+    <div class="rp-label">Position</div>
+    <div class="rp-grid2">
+      <input class="rp-input" type="number" placeholder="X" value="${Math.round(el.x)}" onchange="sp('x',+this.value)">
+      <input class="rp-input" type="number" placeholder="Y" value="${Math.round(el.y)}" onchange="sp('y',+this.value)">
+    </div>
+    <div class="rp-label" style="margin-top:4px">Size</div>
+    <div class="rp-grid2">
+      <input class="rp-input" type="number" placeholder="W" value="${Math.round(el.w)}" onchange="sp('w',+this.value)">
+      <input class="rp-input" type="number" placeholder="H" value="${Math.round(el.h)}" onchange="sp('h',+this.value)">
+    </div>
+    <div class="rp-label" style="margin-top:8px">Opacity</div>
+    <div class="opacity-row">
+      <input type="range" class="opacity-slider" min="0" max="1" step="0.01" value="${el.opacity??1}" oninput="sp('opacity',+this.value);this.nextElementSibling.textContent=Math.round(+this.value*100)+'%'">
+      <span class="opacity-val">${Math.round((el.opacity??1)*100)}%</span>
+    </div>`;
+
+  if(el.type!=='image') {
+    h+=`<div class="rp-label" style="margin-top:4px">Color</div>
+    <div class="rp-row"><input type="color" class="rp-color-btn" value="${el.fill||'#000000'}" onchange="sp('fill',this.value)">
+    <span style="font-size:11px;color:var(--muted)">${el.fill||''}</span></div>`;
+  }
+  if(el.type==='rect') {
+    h+=`<div class="rp-label" style="margin-top:4px">Corner Radius</div>
+    <input class="rp-input" type="number" style="width:100%" min="0" value="${el.radius||0}" onchange="sp('radius',+this.value)">`;
+  }
+  h+=`<div class="rp-label" style="margin-top:8px">Arrange</div>
+  <div class="arrange-grid">
+    <button class="arrange-btn" onclick="ctxFront()">⬆ Front</button>
+    <button class="arrange-btn" onclick="ctxBack()">⬇ Back</button>
+    <button class="arrange-btn" onclick="ctxDuplicate()">⧉ Duplicate</button>
+    <button class="arrange-btn" onclick="deleteSelected()" style="color:#e11d48">🗑 Delete</button>
+  </div>`;
+
+  rp.innerHTML=h;
+}
+
+function sp(key,val){if(!selected)return;saveHist();selected[key]=val;render();}
+
+function syncFontToolbar(el) {
+  document.getElementById('ft-family').value=el.fontFamily||'Segoe UI';
+  document.getElementById('ft-size').value=el.fontSize||24;
+  document.getElementById('ft-color').value=el.fill||'#111827';
+  document.getElementById('ft-bold').classList.toggle('on',el.fontWeight==='bold');
+  document.getElementById('ft-italic').classList.toggle('on',el.fontStyle==='italic');
+  document.getElementById('ft-under').classList.toggle('on',!!el.underline);
+  ['left','center','right'].forEach(a=>{
+    document.getElementById('ft-'+a).classList.toggle('on',el.align===a);
+  });
+}
+
+function ftProp(key,val){
+  if(!selected||selected.type!=='text') return;
+  saveHist(); selected[key]=val; render(); syncFontToolbar(selected);
+}
+function toggleFtProp(key,onVal,offVal){
+  if(!selected||selected.type!=='text') return;
+  saveHist();
+  selected[key]=selected[key]===onVal?offVal:onVal;
+  render(); syncFontToolbar(selected);
+}
+
+// ── LAYERS ────────────────────────────────────────────────────
+function updateLayers() {
+  const list=document.getElementById('layers-list');
+  if(!elements.length){list.innerHTML='<div style="font-size:12px;color:var(--muted);padding:4px">No elements yet</div>';return;}
+  const icons={rect:'▭',circle:'○',triangle:'△',line:'╱',star:'★',heart:'♥',diamond:'◆',arrow:'→',text:'T',image:'🖼',drawing:'✏'};
+  list.innerHTML=[...elements].reverse().map(el=>`
+    <div class="layer-item ${el===selected?'sel':''}" onclick="selLayer(${el.id})">
+      <span class="layer-ico">${icons[el.type]||'?'}</span>
+      <span class="layer-name">${el.name}</span>
+    </div>`).join('');
+}
+function selLayer(id){selected=elements.find(e=>e.id===id)||null;updateProps();updateLayers();render();}
+
+// ── TABS ──────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
+  document.querySelectorAll('.tab-panel').forEach(p=>{p.classList.remove('active');});
+  const panel=document.getElementById('tab-'+name);
+  if(panel) panel.classList.add('active');
+}
+
+// ── HISTORY ──────────────────────────────────────────────────
+function saveHist() {
+  history.push(JSON.stringify(elements.map(e=>({...e,img:undefined}))));
+  if(history.length>60) history.shift();
+  redoStack=[];
+}
+function undo(){
+  if(!history.length) return;
+  redoStack.push(JSON.stringify(elements.map(e=>({...e,img:undefined}))));
+  restore(history.pop()); toast('Undone');
+}
+function redo(){
+  if(!redoStack.length) return;
+  history.push(JSON.stringify(elements.map(e=>({...e,img:undefined}))));
+  restore(redoStack.pop()); toast('Redone');
+}
+function restore(json){
+  elements=JSON.parse(json); selected=null;
+  updateLayers(); updateProps(); render();
+}
+
+// ── CTX MENU ─────────────────────────────────────────────────
+function hideCtx(){document.getElementById('ctx').style.display='none';}
+document.addEventListener('click',hideCtx);
+function ctxDuplicate(){
+  if(!selected) return; saveHist();
+  const cl={...selected,id:++idCtr,x:selected.x+16,y:selected.y+16,name:selected.name+' copy',img:selected.img};
+  elements.push(cl); selected=cl; updateLayers(); updateProps(); render();
+}
+function ctxFront(){
+  if(!selected) return; saveHist();
+  const i=elements.indexOf(selected);
+  if(i<elements.length-1){elements.splice(i,1);elements.push(selected);}
+  render(); updateLayers();
+}
+function ctxBack(){
+  if(!selected) return; saveHist();
+  const i=elements.indexOf(selected);
+  if(i>0){elements.splice(i,1);elements.unshift(selected);}
+  render(); updateLayers();
+}
+function deleteSelected(){
+  if(!selected) return; saveHist();
+  elements=elements.filter(e=>e!==selected); selected=null;
+  updateLayers(); updateProps(); render(); toast('Deleted');
+}
+
+// ── ZOOM ──────────────────────────────────────────────────────
+function applyZoom(){
+  canvas.style.width=(W*zoom)+'px'; canvas.style.height=(H*zoom)+'px';
+  document.getElementById('canvas-shadow').style.width=(W*zoom)+'px';
+  document.getElementById('canvas-shadow').style.height=(H*zoom)+'px';
+  document.getElementById('zoom-pct').textContent=Math.round(zoom*100)+'%';
+}
+function zoomIn(){zoom=Math.min(3,+(zoom+0.1).toFixed(1));applyZoom();}
+function zoomOut(){zoom=Math.max(0.2,+(zoom-0.1).toFixed(1));applyZoom();}
+function zoomFit(){zoom=1;applyZoom();}
+
+// ── CANVAS SETTINGS ───────────────────────────────────────────
+function openCanvasModal(){
+  document.getElementById('modal-title').textContent='Resize Canvas';
+  document.getElementById('modal-body').innerHTML=`
+    <div class="m-row"><label>Preset</label>
+      <select id="sz-preset" onchange="applyPreset(this.value)">
+        <option value="">Custom</option>
+        <option value="800,600">800×600 — General</option>
+        <option value="1080,1080">1080×1080 — Instagram Square</option>
+        <option value="1080,1920">1080×1920 — Instagram Story</option>
+        <option value="1920,1080">1920×1080 — Presentation HD</option>
+        <option value="1200,628">1200×628 — Facebook Ad</option>
+        <option value="595,842">595×842 — A4 Portrait</option>
+        <option value="842,595">842×595 — A4 Landscape</option>
+        <option value="900,300">900×300 — Banner</option>
+        <option value="500,500">500×500 — Logo / Icon</option>
+      </select></div>
+    <div class="m-row"><label>Width (px)</label><input type="number" id="sz-w" value="${W}"></div>
+    <div class="m-row"><label>Height (px)</label><input type="number" id="sz-h" value="${H}"></div>`;
+  document.getElementById('modal-ok').textContent='Apply';
+  document.getElementById('modal-ok').onclick=applyCanvas;
+  document.getElementById('overlay').classList.add('open');
+}
+function applyPreset(v){
+  if(!v) return;
+  const [w,h]=v.split(',').map(Number);
+  document.getElementById('sz-w').value=w;
+  document.getElementById('sz-h').value=h;
+}
+function applyCanvas(){
+  const nw=+document.getElementById('sz-w').value;
+  const nh=+document.getElementById('sz-h').value;
+  if(nw>0&&nh>0){
+    W=nw;H=nh;canvas.width=W;canvas.height=H;
+    updateSizeTag(); applyZoom(); render(); closeModal();
+    toast(`Canvas: ${W}×${H}`);
+  }
+}
+function updateSizeTag(){
+  document.getElementById('size-tag').textContent=`${W} × ${H}`;
+}
+
+// ── EXPORT ────────────────────────────────────────────────────
+function openExportModal(){
+  document.getElementById('modal-title').textContent='Download Design';
+  document.getElementById('modal-body').innerHTML=`
+    <div class="m-row"><label>Format</label>
+      <select id="exp-fmt"><option>PNG</option><option>JPEG</option></select></div>
+    <div class="m-row"><label>Filename</label><input type="text" id="exp-name" value="my-design"></div>`;
+  document.getElementById('modal-ok').textContent='Download';
+  document.getElementById('modal-ok').onclick=doExport;
+  document.getElementById('overlay').classList.add('open');
+}
+function doExport(){
+  const fmt=document.getElementById('exp-fmt').value;
+  const name=document.getElementById('exp-name').value||'design';
+  const mime=fmt==='JPEG'?'image/jpeg':'image/png';
+  const sel=selected; selected=null; render();
+  const url=canvas.toDataURL(mime,0.95);
+  selected=sel; render();
+  const a=document.createElement('a'); a.href=url; a.download=`${name}.${fmt.toLowerCase()}`; a.click();
+  closeModal(); toast(`Downloaded as ${name}.${fmt.toLowerCase()}`);
+}
+
+// ── NEW CANVAS ────────────────────────────────────────────────
+function newCanvas(){
+  if(elements.length&&!confirm('Start a new canvas? This will clear the current design.')) return;
+  saveHist(); elements=[]; selected=null;
+  bgColor='#ffffff'; document.getElementById('bg-color').value='#ffffff';
+  updateLayers(); updateProps(); render(); toast('New canvas');
+}
+
+// ── MODAL ─────────────────────────────────────────────────────
+function closeModal(){document.getElementById('overlay').classList.remove('open');}
+document.getElementById('overlay').addEventListener('click',e=>{if(e.target===document.getElementById('overlay'))closeModal();});
+
+// ── KEYBOARD ─────────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if(['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)) return;
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undo();}
+  if((e.ctrlKey||e.metaKey)&&e.key==='y'){e.preventDefault();redo();}
+  if((e.ctrlKey||e.metaKey)&&e.key==='d'){e.preventDefault();ctxDuplicate();}
+  if(e.key==='Delete'||e.key==='Backspace') deleteSelected();
+  if(e.key==='Escape'){selected=null;updateProps();updateLayers();render();}
+  const step=e.shiftKey?10:1;
+  if(selected){
+    if(e.key==='ArrowLeft'){selected.x-=step;render();}
+    if(e.key==='ArrowRight'){selected.x+=step;render();}
+    if(e.key==='ArrowUp'){selected.y-=step;render();}
+    if(e.key==='ArrowDown'){selected.y+=step;render();}
+  }
+});
+
+// ── HELPERS ───────────────────────────────────────────────────
+function rand(){return Math.random()*16-8;}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+let toastT;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2000);
+}
+</script>
+</body>
+</html>
